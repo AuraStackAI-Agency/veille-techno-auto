@@ -1,0 +1,331 @@
+# Règles de Veille AuraStack
+# Ce fichier définit les critères de pertinence pour le scoring des articles
+# Ces règles sont chargées dans AuraCore au démarrage
+
+# Configuration du scoring
+scoring:
+  base_score: 5          # Score de départ pour chaque article
+  min_valid_score: 7     # Score minimum pour passer à Phi
+  max_score: 10          # Score maximum possible
+
+# Règles d'inclusion (augmentent le score)
+include_rules:
+  # Priorité Critique - Sujets core AuraStack
+  - name: local_llm
+    keywords:
+      - ollama
+      - llama.cpp
+      - local llm
+      - on-device ai
+      - edge ai
+      - private ai
+      - self-hosted llm
+    score_modifier: 3
+    priority: critical
+    description: "LLMs locaux - coeur de notre stack"
+
+  - name: n8n_automation
+    keywords:
+      - n8n
+      - n8n workflow
+      - n8n automation
+      - n8n nodes
+      - n8n community
+    score_modifier: 3
+    priority: critical
+    description: "N8N - notre orchestrateur principal"
+
+  - name: mcp_protocol
+    keywords:
+      - model context protocol
+      - mcp server
+      - mcp client
+      - anthropic mcp
+      - claude mcp
+    score_modifier: 3
+    priority: critical
+    description: "MCP - protocole clé pour nos agents"
+
+  # Priorité Haute - Sujets très pertinents
+  - name: ai_agents
+    keywords:
+      - ai agent
+      - autonomous agent
+      - agent framework
+      - multi-agent
+      - agentic ai
+      - agent orchestration
+    score_modifier: 2
+    priority: high
+    description: "Agents IA autonomes"
+
+  - name: self_hosting
+    keywords:
+      - self-hosted
+      - self hosting
+      - vps
+      - homelab
+      - docker
+      - kubernetes
+      - private cloud
+    score_modifier: 2
+    priority: high
+    description: "Self-hosting et infrastructure"
+
+  - name: open_source_ai
+    keywords:
+      - open source ai
+      - open source llm
+      - mistral
+      - qwen
+      - phi
+      - llama
+      - deepseek
+    score_modifier: 2
+    priority: high
+    description: "Modèles open source"
+
+  - name: rag_vector
+    keywords:
+      - rag
+      - retrieval augmented
+      - vector database
+      - embeddings
+      - qdrant
+      - chromadb
+      - semantic search
+    score_modifier: 2
+    priority: high
+    description: "RAG et bases vectorielles"
+
+  # Priorité Moyenne - Sujets intéressants
+  - name: automation_tools
+    keywords:
+      - zapier
+      - make.com
+      - activepieces
+      - windmill
+      - temporal
+      - workflow automation
+    score_modifier: 1
+    priority: medium
+    description: "Outils d'automatisation (veille concurrentielle)"
+
+  - name: ai_coding
+    keywords:
+      - ai coding
+      - code assistant
+      - copilot
+      - cursor
+      - cody
+      - continue.dev
+      - aider
+    score_modifier: 1
+    priority: medium
+    description: "Assistants de code IA"
+
+  - name: mlops
+    keywords:
+      - mlops
+      - model serving
+      - model deployment
+      - inference optimization
+      - quantization
+      - gguf
+      - exl2
+    score_modifier: 1
+    priority: medium
+    description: "MLOps et optimisation"
+
+  - name: privacy_security
+    keywords:
+      - ai privacy
+      - data sovereignty
+      - gdpr ai
+      - secure ai
+      - confidential computing
+    score_modifier: 1
+    priority: medium
+    description: "Privacy et sécurité IA"
+
+# Règles d'exclusion (diminuent fortement le score)
+exclude_rules:
+  - name: crypto_blockchain
+    keywords:
+      - crypto
+      - cryptocurrency
+      - blockchain
+      - nft
+      - web3
+      - defi
+      - token
+      - bitcoin
+      - ethereum
+    score_modifier: -10
+    priority: critical
+    description: "Crypto/Blockchain - hors scope"
+
+  - name: generic_ai_hype
+    keywords:
+      - ai will replace
+      - ai is coming for
+      - ai apocalypse
+      - singularity
+      - agi is near
+    score_modifier: -5
+    priority: high
+    description: "Hype généraliste sans substance"
+
+  - name: marketing_fluff
+    keywords:
+      - revolutionize
+      - game-changer
+      - disrupt
+      - unprecedented
+      - breakthrough
+    score_modifier: -2
+    priority: medium
+    description: "Langage marketing excessif"
+
+  - name: fundraising_only
+    keywords:
+      - raises $
+      - funding round
+      - series a
+      - series b
+      - valuation
+    score_modifier: -3
+    priority: medium
+    description: "News purement financières"
+
+  - name: ai_art_showcase
+    keywords:
+      - midjourney showcase
+      - dalle gallery
+      - ai art collection
+      - prompt gallery
+    score_modifier: -4
+    priority: medium
+    description: "Showcases AI art sans technique"
+
+# Règles de boost (augmentent le score si présents avec d'autres critères)
+boost_rules:
+  - name: tutorial_howto
+    keywords:
+      - tutorial
+      - how to
+      - step by step
+      - guide
+      - walkthrough
+    score_modifier: 1
+    priority: low
+    description: "Contenu tutoriel pratique"
+
+  - name: benchmark_comparison
+    keywords:
+      - benchmark
+      - comparison
+      - vs
+      - performance test
+      - speed test
+    score_modifier: 1
+    priority: low
+    description: "Benchmarks et comparatifs"
+
+  - name: release_announcement
+    keywords:
+      - release
+      - announced
+      - launched
+      - new version
+      - update
+    score_modifier: 1
+    priority: low
+    description: "Annonces de releases"
+
+  - name: open_source_release
+    keywords:
+      - open source
+      - github
+      - mit license
+      - apache license
+      - now open source
+    score_modifier: 1
+    priority: low
+    description: "Releases open source"
+
+# Sources à surveiller en priorité
+priority_sources:
+  - name: ollama_releases
+    url: https://github.com/ollama/ollama/releases.atom
+    check_frequency: 1h
+    auto_high_score: true
+
+  - name: n8n_releases
+    url: https://github.com/n8n-io/n8n/releases.atom
+    check_frequency: 1h
+    auto_high_score: true
+
+  - name: anthropic_news
+    url: https://www.anthropic.com/news/rss.xml
+    check_frequency: 2h
+    auto_high_score: true
+
+# Patterns de clickbait à détecter (pour Phi)
+clickbait_patterns:
+  - "you won't believe"
+  - "shocking"
+  - "mind-blowing"
+  - "this changes everything"
+  - "the end of"
+  - "is dead"
+  - "kills"
+  - "destroys"
+  - "secret"
+  - "they don't want you to know"
+
+# Configuration de la validation Phi
+phi_validation:
+  min_confidence: 0.7      # Confiance minimum pour valider
+  require_fact_check: true # Vérifier les claims chiffrées
+  max_summary_length: 500  # Caractères max pour le résumé FR
+  required_hashtags: 3     # Nombre de hashtags à générer
+
+# Configuration de la distribution
+distribution:
+  telegram:
+    min_score: 8
+    min_confidence: 0.9
+    message_template: |
+      🔥 *Pépite trouvée!*
+
+      *{title}*
+
+      {summary}
+
+      🔗 {url}
+
+      {hashtags}
+
+  notion:
+    all_validated: true    # Tous les articles validés vont dans Notion
+    include_draft: true    # Inclure le draft LinkedIn
+
+  email:
+    frequency: weekly
+    day: sunday
+    time: "18:00"
+    timezone: Europe/Paris
+    sections:
+      - name: "Gros Titres"
+        filter: "score >= 9"
+        limit: 3
+      - name: "Nouveautés N8N"
+        filter: "source contains 'n8n'"
+        limit: 5
+      - name: "Veille Concurrentielle"
+        filter: "source in ['zapier', 'make', 'activepieces']"
+        limit: 5
+      - name: "Vidéos à ne pas manquer"
+        filter: "source_type = 'youtube'"
+        limit: 3
