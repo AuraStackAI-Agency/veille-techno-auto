@@ -1,0 +1,253 @@
+{
+  "name": "Veille Techno Auto - Newsletter IA",
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Cron 07h00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300],
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "cronExpression", "expression": "0 7 * * *"}]
+        }
+      }
+    },
+    {
+      "id": "rss_us_openai",
+      "name": "RSS OpenAI",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [250, 0],
+      "parameters": {"url": "https://openai.com/blog/rss.xml"}
+    },
+    {
+      "id": "rss_us_google",
+      "name": "RSS Google AI",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [250, 100],
+      "parameters": {"url": "https://blog.google/technology/ai/rss/"}
+    },
+    {
+      "id": "rss_us_anthropic",
+      "name": "RSS Anthropic",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [250, 200],
+      "parameters": {"url": "https://www.anthropic.com/news/rss.xml"}
+    },
+    {
+      "id": "rss_eu_n8n",
+      "name": "RSS N8N Blog",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "parameters": {"url": "https://blog.n8n.io/rss/"}
+    },
+    {
+      "id": "rss_eu_mistral",
+      "name": "RSS Mistral AI",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [250, 400],
+      "parameters": {"url": "https://mistral.ai/news/rss.xml"}
+    },
+    {
+      "id": "rss_n8n_releases",
+      "name": "RSS N8N Releases",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [250, 500],
+      "parameters": {"url": "https://github.com/n8n-io/n8n/releases.atom"}
+    },
+    {
+      "id": "rss_techcrunch",
+      "name": "RSS TechCrunch AI",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [250, 600],
+      "parameters": {"url": "https://techcrunch.com/category/artificial-intelligence/feed/"}
+    },
+    {
+      "id": "merge_rss",
+      "name": "Merge RSS",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [500, 300],
+      "parameters": {"mode": "append"}
+    },
+    {
+      "id": "filter_24h",
+      "name": "Filter 24h",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [700, 300],
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [{
+            "id": "date_filter",
+            "leftValue": "={{ $json.pubDate }}",
+            "rightValue": "={{ $now.minus({hours: 24}).toISO() }}",
+            "operator": {"type": "dateTime", "operation": "after"}
+          }],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "filter_keywords",
+      "name": "Filter Keywords",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": false, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [{
+            "id": "keyword_filter",
+            "leftValue": "={{ $json.title + ' ' + ($json.contentSnippet || '') }}",
+            "rightValue": "AI|LLM|GPT|Claude|automation|n8n|agent|workflow|machine learning|neural|transformer",
+            "operator": {"type": "string", "operation": "regex"}
+          }],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "limit_items",
+      "name": "Limit 15 Items",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [1100, 300],
+      "parameters": {"maxItems": 15}
+    },
+    {
+      "id": "loop_items",
+      "name": "Loop Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1300, 300],
+      "parameters": {"batchSize": 1, "options": {}}
+    },
+    {
+      "id": "qwen_summarize",
+      "name": "Qwen Summarize",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1500, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"qwen2.5-coder:3b-instruct\",\n  \"prompt\": \"Résume cet article en 2-3 phrases en français. Titre: {{ $json.title }}\\nContenu: {{ $json.contentSnippet || $json.content || 'Non disponible' }}\",\n  \"stream\": false,\n  \"options\": {\n    \"temperature\": 0.3,\n    \"num_predict\": 200\n  }\n}",
+        "options": {"timeout": 60000}
+      }
+    },
+    {
+      "id": "set_summary",
+      "name": "Set Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1700, 300],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {"id": "title", "name": "title", "value": "={{ $('Loop Items').item.json.title }}", "type": "string"},
+            {"id": "link", "name": "link", "value": "={{ $('Loop Items').item.json.link }}", "type": "string"},
+            {"id": "summary", "name": "summary", "value": "={{ $json.response }}", "type": "string"},
+            {"id": "source", "name": "source", "value": "={{ $('Loop Items').item.json.creator || 'RSS' }}", "type": "string"},
+            {"id": "pubDate", "name": "pubDate", "value": "={{ $('Loop Items').item.json.pubDate }}", "type": "string"}
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "aggregate_summaries",
+      "name": "Aggregate Summaries",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [1900, 300],
+      "parameters": {"aggregate": "aggregateAllItemData", "options": {}}
+    },
+    {
+      "id": "generate_newsletter",
+      "name": "Generate Newsletter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2100, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"qwen2.5-coder:3b-instruct\",\n  \"prompt\": \"Tu es un expert en veille technologique. Génère une newsletter professionnelle en français à partir de ces articles résumés. Structure:\\n\\n## 🔥 Gros Titres\\n(2-3 news les plus importantes)\\n\\n## 🚀 Nouveautés N8N & Automation\\n(si applicable)\\n\\n## 🔬 Analyse Technique\\n(tendances observées)\\n\\n## 📊 Veille Concurrentielle\\n(Zapier, Make, etc si mentionné)\\n\\nArticles:\\n{{ JSON.stringify($json.data) }}\",\n  \"stream\": false,\n  \"options\": {\n    \"temperature\": 0.5,\n    \"num_predict\": 1500\n  }\n}",
+        "options": {"timeout": 120000}
+      }
+    },
+    {
+      "id": "format_email",
+      "name": "Format Email HTML",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2300, 300],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {"id": "subject", "name": "subject", "value": "=📰 Veille Techno IA - {{ $now.format('dd/MM/yyyy') }}", "type": "string"},
+            {"id": "htmlBody", "name": "htmlBody", "value": "=<html>\n<head>\n<style>\nbody { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }\nh1 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }\nh2 { color: #1e40af; margin-top: 30px; }\n.footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 12px; }\n</style>\n</head>\n<body>\n<h1>📰 Veille Technologique IA</h1>\n<p><em>Newsletter automatique générée le {{ $now.format('dd/MM/yyyy à HH:mm') }}</em></p>\n\n{{ $json.response.replace(/\\n/g, '<br>').replace(/## /g, '<h2>').replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>') }}\n\n<div class=\"footer\">\n<p>🤖 Newsletter générée automatiquement par N8N + Qwen 2.5</p>\n<p>AuraStack AI Agency</p>\n</div>\n</body>\n</html>", "type": "string"}
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "send_email",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [2500, 300],
+      "parameters": {
+        "fromEmail": "veille@aurastackai.com",
+        "toEmail": "admin@aurastackai.com",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "html": "={{ $json.htmlBody }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Cron 07h00": {"main": [[{"node": "RSS OpenAI", "type": "main", "index": 0}, {"node": "RSS Google AI", "type": "main", "index": 0}, {"node": "RSS Anthropic", "type": "main", "index": 0}, {"node": "RSS N8N Blog", "type": "main", "index": 0}, {"node": "RSS Mistral AI", "type": "main", "index": 0}, {"node": "RSS N8N Releases", "type": "main", "index": 0}, {"node": "RSS TechCrunch AI", "type": "main", "index": 0}]]},
+    "RSS OpenAI": {"main": [[{"node": "Merge RSS", "type": "main", "index": 0}]]},
+    "RSS Google AI": {"main": [[{"node": "Merge RSS", "type": "main", "index": 0}]]},
+    "RSS Anthropic": {"main": [[{"node": "Merge RSS", "type": "main", "index": 0}]]},
+    "RSS N8N Blog": {"main": [[{"node": "Merge RSS", "type": "main", "index": 0}]]},
+    "RSS Mistral AI": {"main": [[{"node": "Merge RSS", "type": "main", "index": 0}]]},
+    "RSS N8N Releases": {"main": [[{"node": "Merge RSS", "type": "main", "index": 0}]]},
+    "RSS TechCrunch AI": {"main": [[{"node": "Merge RSS", "type": "main", "index": 0}]]},
+    "Merge RSS": {"main": [[{"node": "Filter 24h", "type": "main", "index": 0}]]},
+    "Filter 24h": {"main": [[{"node": "Filter Keywords", "type": "main", "index": 0}]]},
+    "Filter Keywords": {"main": [[{"node": "Limit 15 Items", "type": "main", "index": 0}]]},
+    "Limit 15 Items": {"main": [[{"node": "Loop Items", "type": "main", "index": 0}]]},
+    "Loop Items": {"main": [[{"node": "Qwen Summarize", "type": "main", "index": 0}], [{"node": "Aggregate Summaries", "type": "main", "index": 0}]]},
+    "Qwen Summarize": {"main": [[{"node": "Set Summary", "type": "main", "index": 0}]]},
+    "Set Summary": {"main": [[{"node": "Loop Items", "type": "main", "index": 0}]]},
+    "Aggregate Summaries": {"main": [[{"node": "Generate Newsletter", "type": "main", "index": 0}]]},
+    "Generate Newsletter": {"main": [[{"node": "Format Email HTML", "type": "main", "index": 0}]]},
+    "Format Email HTML": {"main": [[{"node": "Send Email", "type": "main", "index": 0}]]}
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Paris",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

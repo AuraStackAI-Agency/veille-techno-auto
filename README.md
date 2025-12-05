@@ -1,68 +1,78 @@
 # Veille Techno & Automatisation N8N
 
 [![GitHub](https://img.shields.io/badge/GitHub-veille--techno--auto-blue)](https://github.com/AuraStackAI-Agency/veille-techno-auto)
+[![Status](https://img.shields.io/badge/Status-DEPLOYED-success)](https://n8n.aurastackai.com)
 
-## 📋 Description
+## Description
 Système automatisé de veille technologique (IA, N8N, Automatisation) agrégant des sources US, EU et CN.
 Le système utilise N8N pour l'orchestration et un LLM local (Qwen 2.5 Coder 3B) sur VPS pour le résumé et la traduction.
 
-## ✨ Fonctionnalités
-- 📰 Collecte automatique de sources RSS (US, EU, CN)
-- 🎥 Analyse de transcriptions YouTube
-- 🤖 Résumés IA via Qwen 2.5 Coder 3B (local)
-- 📧 Newsletter quotidienne par email (08h00)
-- 🔄 Orchestration avec N8N
-- 🐳 Déploiement Docker
+## Fonctionnalités
+- Collecte automatique de sources RSS (US, EU, CN)
+- Résumés IA via Qwen 2.5 Coder 3B (local)
+- Newsletter quotidienne par email (08h00)
+- Orchestration avec N8N
+- Filtrage intelligent par mots-clés IA
 
-## 🏗️ Architecture
+## Architecture
 ```
 Trigger Cron (07:00)
   ↓
-Collecte Sources (RSS + YouTube)
+Collecte Sources (7 flux RSS en parallèle)
   ↓
-Filtrage Mots-clés
+Merge → Filter 24h → Filter Keywords
   ↓
-Qwen 2.5 Coder 3B (Résumés)
+Loop Items → Qwen 2.5 (Résumés)
   ↓
-Agrégation Newsletter
+Agrégation → Qwen 2.5 (Newsletter)
   ↓
-Email (08:00)
+Format HTML → Email (08:00)
 ```
 
-## 📦 Installation
+## Déploiement
 
-Voir [docs/INSTALL.md](docs/INSTALL.md)
+### Prérequis
+- N8N instance (existante sur le VPS)
+- Ollama avec `qwen2.5-coder:3b-instruct`
+- Credentials SMTP configurés dans N8N
 
-## 📚 Documentation
+### Installation
+1. Importer `workflows/tech_watch_main.json` dans N8N
+2. Configurer les credentials SMTP
+3. Activer le workflow
 
-- [Architecture](docs/ARCHITECTURE.md)
-- [Installation](docs/INSTALL.md)
+**Note**: Ce projet utilise l'instance N8N existante sur `https://n8n.aurastackai.com` et Ollama sur le VPS.
 
-## 🎯 Sources Couvertes
+## Sources Couvertes
 
 ### RSS
-- **US** : OpenAI, Google AI, Microsoft AI, Anthropic, TechCrunch AI
-- **EU** : Mistral AI, N8N Blog, Sifted
-- **CN** : TechNode, SCMP Tech
-- **Concurrents** : Zapier, Make, ActivePieces, Flowise
+- **US** : OpenAI, Google AI, Anthropic, TechCrunch AI
+- **EU** : Mistral AI, N8N Blog
+- **N8N** : GitHub Releases (Atom Feed)
 
-### YouTube
-- N8N Official
-- Liam Ottley
-- AI Explained
-- Two Minute Papers
+### Mots-clés de filtrage
+`AI|LLM|GPT|Claude|automation|n8n|agent|workflow|machine learning|neural|transformer`
 
-## 🛠️ Technologies
+## Stack Technique
 
-- **Orchestration** : N8N
-- **IA** : Ollama + qwen2.5-coder:3b-instruct
-- **Conteneurs** : Docker
-- **Langages** : Python, JSON
+| Composant | Détail |
+|-----------|--------|
+| Orchestration | N8N (existant sur VPS) |
+| IA | Ollama + qwen2.5-coder:3b-instruct |
+| Endpoint Ollama | http://ollama:11434 |
+| Timezone | Europe/Paris |
 
-## 📝 Licence
+## Configuration
+
+Le workflow utilise :
+- **Cron** : `0 7 * * *` (tous les jours à 07h00)
+- **Limit** : 15 articles max par newsletter
+- **Timeout Ollama** : 60s (résumé), 120s (newsletter)
+
+## Licence
 
 MIT
 
-## 👥 Contributeurs
+## Contributeurs
 
 AuraStackAI-Agency
